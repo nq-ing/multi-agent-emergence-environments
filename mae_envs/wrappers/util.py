@@ -37,18 +37,21 @@ class DiscretizeActionWrapper(gym.ActionWrapper):
         super().__init__(env)
         self.action_key = action_key
         self.discrete_to_continuous_act_map = []
-        for i, ac_space in enumerate(self.action_space.spaces[action_key].spaces):
+        discrete_spaces = []
+        for ac_space in self.action_space.spaces[action_key].spaces:
             assert isinstance(ac_space, Box)
             action_map = np.array([np.linspace(low, high, nbuckets)
-                                   for low, high in zip(ac_space.low, ac_space.high)])
-            _nbuckets = np.ones((len(action_map))) * nbuckets
-            self.action_space.spaces[action_key].spaces[i] = gym.spaces.MultiDiscrete(_nbuckets)
+                                   for low, high in zip(ac_space.low, ac_space.high)],
+                                  dtype=ac_space.dtype)
+            _nbuckets = np.full(len(action_map), nbuckets, dtype=np.int64)
+            discrete_spaces.append(gym.spaces.MultiDiscrete(_nbuckets))
             self.discrete_to_continuous_act_map.append(action_map)
+        self.action_space.spaces[action_key] = gym.spaces.Tuple(discrete_spaces)
         self.discrete_to_continuous_act_map = np.array(self.discrete_to_continuous_act_map)
 
     def action(self, action):
         action = deepcopy(action)
-        ac = action[self.action_key]
+        ac = np.asarray(action[self.action_key])
 
         # helper variables for indexing the discrete-to-continuous action map
         agent_idxs = np.tile(np.arange(ac.shape[0])[:, None], ac.shape[1])

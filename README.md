@@ -33,3 +33,26 @@ You can also use `bin/examine` to play a saved policy on an environment. There a
 Note that to be able to play saved policies, you will need to install a few additional packages. You can do this via
 
 `pip install -r multi-agent-emergence-environments/requirements_ma_policy.txt`
+
+### DGX Spark (Linux ARM64)
+
+The `codex/dgx-spark-modern-port` branch replaces the unavailable MuJoCo 1.50 /
+TensorFlow 1 ARM64 stack with modern MuJoCo and NumPy checkpoint inference. The
+original environment, quadrant configuration, and published `.npz` weights are
+retained.
+
+Clone the matching `codex/dgx-spark-modern-port` branch of
+`nq-ing/mujoco-worldgen` next to this repository, then run:
+
+```
+python3 -m venv .venv
+.venv/bin/python -m pip install -r ../mujoco-worldgen/requirements.txt
+.venv/bin/python -m pip install -r requirements_dgx_spark.txt
+.venv/bin/python -m pip install --no-deps -e ../mujoco-worldgen -e .
+MUJOCO_GL=egl .venv/bin/python bin/run_hide_and_seek_demo.py
+```
+
+The demo prints progress every 20 environment steps and writes both an animated
+GIF and a JSON verification summary under `artifacts/`. Use `--policy random`
+for a physics-only smoke test; the default uses OpenAI's published quadrant
+policy. MP4 output is also supported when `imageio-ffmpeg` is installed.

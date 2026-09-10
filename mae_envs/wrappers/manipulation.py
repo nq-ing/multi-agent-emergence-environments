@@ -55,7 +55,7 @@ class GrabObjWrapper(gym.Wrapper):
         if self.obj_in_game_metadata_keys is not None:
             self.actual_body_slice = np.concatenate([self.metadata[k] for k in self.obj_in_game_metadata_keys])
         else:
-            self.actual_body_slice = np.ones((len(self.body_names))).astype(np.bool)
+            self.actual_body_slice = np.ones((len(self.body_names))).astype(bool)
         actual_body_names = list(compress(self.body_names, self.actual_body_slice))
         self.n_obj = len(actual_body_names)
 
@@ -147,9 +147,11 @@ class GrabObjWrapper(gym.Wrapper):
                 grab_vec = self.grab_dist / (1e-3 + np.linalg.norm(grab_vec)) * grab_vec
 
             # The distance constraint needs to be rotated into the frame of reference of the agent
-            sim.model.eq_data[self.agent_eq_ids[agent_idx], :3] = np.matmul(agent_rot.T, grab_vec)
+            eq_data = sim.model.eq_data[self.agent_eq_ids[agent_idx]]
+            relpose_start = 0 if eq_data.shape[0] == 7 else 3
+            eq_data[relpose_start:relpose_start + 3] = np.matmul(agent_rot.T, grab_vec)
             # The angle constraint is the difference between the agents frame and the objects frame
-            sim.model.eq_data[self.agent_eq_ids[agent_idx], 3:] = mat2quat(np.matmul(agent_rot.T, obj_rot))
+            eq_data[relpose_start + 3:relpose_start + 7] = mat2quat(np.matmul(agent_rot.T, obj_rot))
 
         self.last_obj_grabbed = self.obj_grabbed
 
@@ -239,7 +241,7 @@ class LockObjWrapper(gym.Wrapper):
         if self.obj_in_game_metadata_keys is not None:
             self.actual_body_slice = np.concatenate([self.metadata[k] for k in self.obj_in_game_metadata_keys])
         else:
-            self.actual_body_slice = np.ones((len(self.body_names))).astype(np.bool)
+            self.actual_body_slice = np.ones((len(self.body_names))).astype(bool)
 
         actual_body_names = list(compress(self.body_names, self.actual_body_slice))
         self.n_obj = len(actual_body_names)
